@@ -1,56 +1,52 @@
-
 $$
 \begin{align*}
-\min_w \max_{e_k} &\sum^K_{k=1}(y_k - (x_k + e_k)^Tw)^2\\
-
-s.t. & ||e_k||^2_2\leq \delta^2, k =1...K
+\min_W \max_{v_k,u_k}& \quad \frac{1}{K} \sum_{k=1}^K(y_k - (x_k^m + v_k)^TW(x_k^n+u_k))^2\\
+s.t. &\quad ||u_k||^2_2\leq\delta^2,\quad ||v_k||^2_2\leq\delta^2, \quad k =1,...,K.
 \end{align*}
 $$
-Simplify the above problem to an unconstrained optimization problem. Solve the simplified
-problem and report the classification accuracy for 10-fold cross-validation.
+where W is a weight matrix.
+Derive update rules to estimate W and report classification accuracy for 10-fold cross-validation
 
-$$
+let's denote $x_k^m$ as $x_k$ and $x_k^n$ as $z_k$.
 
-\begin{align*}
-\mathcal{L} &= \sum^K_{k=1}(y_k - (x_k + e_k)^Tw)^2 + \alpha(||e_k||^2_2 - \delta^2)\\
+solve the problem with respect to $v_k$.
+$$\max_{v_k}(y_k - (x_k + v_k)^TW(z_k+u_k))^2 = \max_{v_k}
+(y_k - (x_k + v_k)^Tw_R)^2$$
+There is exactly the same problem as in the first task, so
+$$v_k^* = \lambda \frac{w_R}{||w_R||_2}\delta = -sign(y_k-x_k^Tw_R)\delta\frac{w_R}{||w_R||_2}$$
 
-\frac{\partial\mathcal{L}}{\partial e_k}&=2w(y_k - w^T(x_k + e_k)) + 2 \alpha e_k = 0\\
+The same for $u_k$
+$$\max_{u_k}(y_k - (x_k + v_k)^TW(z_k+u_k))^2 = \max_{u_k}
+(y_k - w_L^T(z_k+u_k))^2 =\\ \max_{u_k}
+(y_k - (z_k+u_k)^Tw_L)^2$$
 
-& => w(scalar) +\alpha e_k=0\\
-& => e_k  \text{ is parallel to w}\\
-& => e_k =\lambda w
-\end{align*}
-$$
-As far as convex function reach its maxima on the boundary (except constant functions) $||e_k||^2_2 = \delta^2$
-=> $e_k = \lambda \frac{w}{||w||_2}\delta$ for $\lambda \in\{1,-1\}$
+$$u_k^*=-sign(y_k-z_k^Tw_L)\delta\frac{w_L}{||w_L||_2}$$
 
-to maximize this function $(y_k - (x_k + e_k)^Tw)^2 = (b - e_k^Tw)^2 = (b - \lambda \delta|w|_2)^2$ it is clear that second term should have the sign as $(-b)$ => $\lambda = \frac{-b}{|b|}$
+For W
+$$
+\min_W \max_{v_k,u_k} \quad \frac{1}{K} \sum_{k=1}^K(y_k - (x_k + v_k)^TW(z_k+u_k))^2 =\\ \min_W \quad \frac{1}{K} \sum_{k=1}^K(y_k - (x_k + v_k^*)^TW(z_k+u_k^*))^2
+$$
+denote X as $[x_1 + v_1^*,...,x_K+v_K^*]$ and Z as $[z_1 + u_1^*,...,z_K+u_K^*]$
+$\sum_{k=1}^K(y_k - (x_k + v_k^*)^TW(z_k+u_k^*))^2 = ||y -diag(X^TWZ)||_2^2$
 
-$$
-(b - \lambda \delta|w|_2)^2 =(b + \frac{b}{|b|} \delta|w|_2)^2 = b^2 +2|b|\delta||w||_2 + ||w||_2^2 = \\
-=(|b|+\delta||w||_2)^2 = (|y_k - x_k^Tw|+\delta||w||_2)^2\\
+I did not find whether how to diff the diag function or more simpler matrix form. So:
 
-$$
+$$W = \argmin_W ||y -diag(X^TWZ)||_2^2$$
 
-Back to init problem
+result:
 
+1) 
 $$
-\min_w \max_{e_k} \sum^K_{k=1}(y_k - (x_k + e_k)^Tw) =\min_w \sum^K_{k=1}(|y_k - x_k^Tw|+\delta||w||_2)^2
+    w_L =W^{tT}(x_k + v_k^t)\\
+    u_k^{t+1}=-sign(y_k-z_k^Tw_L)\delta\frac{w_L}{||w_L||_2}
 $$
-rewrite to equivalent problem (because all terms are positive)
+2) 
 $$
-\min_w \sum^K_{k=1}(|y_k - x_k^Tw|+\delta||w||_2)= \min_w (||y - Xw||_1+\delta K ||w||_2)
+    w_R =W^t(z_k+u_k)\\
+    v_k^{t+1} = -sign(y_k-x_k^Tw_R)\delta\frac{w_R}{||w_R||_2}
 $$
-
-I tryed to do something but it did not become better:
+3) 
 $$
-\frac{\partial f}{\partial w} = X^T sign(y - Xw^*) +\delta \frac{w}{||w||_2} = 0\\
- \delta \frac{w}{||w||_2} = - X^T sign(y - Xw^*) = - X^T S\\
-|\delta \frac{w}{||w||_2}|_2=\delta => |X^T S|_2 = \delta
+    X = [x_1 + v_1^{t+1},...,x_K+v_K^{t+1}] \quad Z = [z_1 + u_1^{t+1},...,z_K+u_K^{t+1}]\\
+    W^{t+1} = \argmin_W ||y -diag(X^TWZ)||_2^2
 $$
-So i came with the following:
-$$
-\delta \frac{w^*}{||w^*||_2} = - X^T sign(y - Xw^*)\\
-|X^T sign(y - Xw^*)|_2 = \delta
-$$
-Did not come to closed form solution
