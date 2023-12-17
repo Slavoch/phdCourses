@@ -1,15 +1,34 @@
-error1 and error2 are significantly different because $U_1$ and $U_2$ are different matrices with small scale factor.
-As far as we approximate $Y_1$ with $U_1V_1^T$ s.t. $U_1 =U_2$ the scale factor of $U_1V_1^T$ is containce in $V_1$ and $U_1$ ramaince ralativly small in terms of norm.
-So then we compare $U_1 =U_2$ the distance error is small because of small scale factor of $U_1$ and by the same logic $U_2$.
+$$
+\begin{align*}
+y_k(tr(W^TX_k) + b) - 1 & \geq 0\\
+y_k(tr(W^TX_k) + b) - 1  -p_k^2 & = 0\\
+\end{align*}
+$$
 
-So if we force $U$ be orthogonal we could resolve that issue.
+denote $g_k =y_k(tr(W^TX_k) + b) - 1$ and rewrite problem
 
 $$
 \begin{align*}
-\min \quad & \frac{1}{2} ||Y_1 - U_1V_1^T||_F^2 + \frac{1}{2}||Y_2 - U_2V_2^T||_F^2\\
-s.t \quad & U_1^TU_1 = I\\
-&U_2^TU_2 = I\\
-&U_1^TU_2 = I\\
-
+\min_{W,b} \quad & \frac{1}{2}||W||_F^2\\
+st. \quad & g_k -|p_k| = 0
 \end{align*}
 $$
+
+$$
+\begin{align*}
+\mathcal{L} = \frac{1}{2}||W||_F^2 + \frac{\alpha}{2}||g - abs(p) + u||^2_2
+\end{align*}
+$$
+
+ADMM:
+$$
+\begin{align*}
+W^{k+1} &= \argmin_W\mathcal{L}(W,b^k,u^k,p^k)\\
+    b^{k+1} &= \argmin_b\mathcal{L}(W^{k+1},b,u^k,p^k)\\
+p^{k+1} &= \argmin_b\mathcal{L}(W^{k+1},b^{k+1},u^k,p)\\
+u^{k+1} &= u^k + g^k-abs(p^{k+1})\\
+\end{align*}
+$$
+
+Missing elements:
+Consider $tr(W^TX) = \sum W_{ij}X_{ij}$ to consider only existing elements I substituted $X_{ij} = 0$ where pixel is missing. We should minimize only such $W_{ij}$ that partisipated in prediction so I substituted $||W||^2_F$ with $||W \circ \Omega_{mean}||^2_F$ where $ \Omega_{mean} = \sum \Omega_k/K$
